@@ -128,6 +128,7 @@ class Experiment:
             sorn.step(u)
             symbol = int(readout_layer.predict(sorn.x.reshape(1,-1)))
             spont_output += sorn.source.index_to_symbol(symbol)
+            print(spont_output)
             u = np.zeros(n_symbols)
             u[symbol] = 1
 

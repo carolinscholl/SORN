@@ -35,6 +35,7 @@ class Sorn:
         self.W_ei = FullSynapticMatrix(par, (par.N_e, aux.N_i))
         self.W_eu = self.source.generate_connection_e(par)
 
+
         # Initialize the activation of neurons randomly
         self.x = (np.random.random(par.N_e) < 0.5) + 0
         self.y = (np.random.random(aux.N_i) < 0.5) + 0

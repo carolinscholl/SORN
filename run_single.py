@@ -3,10 +3,9 @@ argument with the specified parameters and experiment instructions"""
 
 import sys; sys.path.append('.')
 from importlib import import_module
-
 from common.sorn import Sorn
 from common.stats import Stats
-from utils import backup_pickle
+from utils.backup import backup_pickle
 
 ################################################################################
 #                              SORN simulation                                 #
@@ -34,6 +33,8 @@ params.aux.experiment_tag = '_{}'.format(tag)
 experiment = exp_dir.experiment.Experiment(params)
 experiment.files_tosave = ['params', 'stats', 'scripts']
 sorn = Sorn(params, experiment.inputsource)
+
+
 stats = Stats(experiment.stats_cache, params)
 
 # 4. run one experiment once
@@ -41,3 +42,5 @@ experiment.run(sorn, stats)
 
 # 5. save initial sorn parameters and stats objects
 backup_pickle(experiment, stats)
+
+print('done')

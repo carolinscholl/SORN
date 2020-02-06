@@ -29,7 +29,7 @@ def get_par():
 
     par.input_gain = 1                             # input gain factor
 
-    par.lamb = 10                                  # number of out connections
+    par.lamb = int(0.1*par.N_e) #10                # number of out connections
 
     par.T_e_max = 0.5                              # max initial threshold for E
     par.T_e_min = 0                                # min initial threshold for E
@@ -44,7 +44,7 @@ def get_par():
 
     par.steps_plastic = 100000                      # sorn training time steps
     par.steps_readout = 10000                       # readout train and test steps
-    par.steps_spont = 1000000                         # steps of spontaneous generation
+    par.steps_spont = 100                         # steps of spontaneous generation
 
 ################################################################################
 #                    Additional derivative SORN parameters                     #
