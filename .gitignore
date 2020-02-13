@@ -3,6 +3,7 @@ help.rtf
 .remote-sync.json
 *.out
 /*.out
+/MusicTask/midis
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

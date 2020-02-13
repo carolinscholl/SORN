@@ -50,3 +50,4 @@ tornado=5.1.1
 wheel=0.32.3
 xz=5.2.4
 zlib=1.2.11
+pypianoroll=0.5.3
