@@ -91,6 +91,8 @@ class Sorn:
         # Update SORN variables
         self.x = x_new
         self.y = y_new
+        print(x_new)
+        print(y_new)
 
     def ip(self, x):
         """

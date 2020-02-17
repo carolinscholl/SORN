@@ -1,7 +1,7 @@
 """ Music Generation Source
 
 This script contains a Music source.
-Assumes that source is a single midi file
+Assumes that source is a single MIDI file
 """
 
 import random
@@ -11,7 +11,6 @@ import numpy as np
 from common import synapses
 
 import pypianoroll as piano
-
 
 
 class MusicSource(object):
@@ -30,8 +29,8 @@ class MusicSource(object):
         self.octaves = list(range(11))
 
         # self.file_path= params.file_path
-        #self.steps_plastic = params.steps_plastic
-        #self.steps_readout = params.steps_readout
+        self.steps_plastic = params.steps_plastic
+        self.steps_readout = params.steps_readout
         self.path_to_music = params.path_to_music
 
         multitrack = piano.parse(self.path_to_music)
@@ -43,6 +42,7 @@ class MusicSource(object):
         multitrack = piano.utilities.downsample(multitrack, 2) # only take every 2nd time step
 
         singletrack = multitrack.tracks[0]
+        self.instrument = singletrack.program # set the instrument (MIDI ID)
 
         p_roll = singletrack.pianoroll
         assert piano.metrics.polyphonic_rate(p_roll) == 0, 'Polyphonic rate above 0, need monophonic input'
@@ -54,17 +54,17 @@ class MusicSource(object):
         for i in range(12):
             for j in range(2):
                 curr_perc = piano.metrics.in_scale_rate(p_roll, key=i, kind=kind[j])
-                if curr_perc > max_perc
+                if curr_perc > max_perc:
                     max_perc = curr_perc
                     key[0] = i
-                    key[1] = kind[j]
-                    key[3] = curr_perc
+                    key[1] = j
+                    key[2] = curr_perc
         print('Key of current piece: ', key[0], kind[int(key[1])], 'percentage: ', key[2])
 
         self.lowest_pitch = singletrack.get_active_pitch_range()[0]
         self.highest_pitch = singletrack.get_active_pitch_range()[1]
 
-        self.alphabet = list(range(self.lowest_pitch, self.highest_pitch)) # indices for piano roll
+        self.alphabet = list(range(self.lowest_pitch, self.highest_pitch+1)) # indices for piano roll
         self.alphabet.append(-1) # add this for silence (all zeros)
 
         self.A = len(self.alphabet) # alphabet size
@@ -146,7 +146,6 @@ class MusicSource(object):
 
         return note_as_string
 
-
     def next(self):
         """
         Update current index and return next symbol of the corpus, in the form
@@ -160,8 +159,6 @@ class MusicSource(object):
         self.ind += 1
 
         # in case the sequence ends, restart it
-        # this does not really affect FDT because the corpus is much bigger
-        # than the number of simulation steps.
         if self.ind == len(self.corpus):
             self.ind = 0
 

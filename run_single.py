@@ -40,6 +40,7 @@ stats = Stats(experiment.stats_cache, params)
 # 4. run one experiment once
 experiment.run(sorn, stats)
 
+
 # 5. save initial sorn parameters and stats objects
 backup_pickle(experiment, stats)
 
