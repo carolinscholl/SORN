@@ -20,7 +20,7 @@ def get_par():
     For each sorn simulation, change these parameters manually.
     """
     par.N_e = 1000                                  # excitatory neurons
-    par.N_u = int(par.N_e/50)                       # neurons in each input pool
+    par.N_u = int(par.N_e/100) # int(par.N_e/50)     # neurons in each input pool
 
     par.eta_stdp = 0.005                           # STDP learning rate
     par.prune_stdp = False                         # prune very small weights
@@ -39,13 +39,13 @@ def get_par():
 ################################################################################
 #                           Experiment parameters                              #
 ################################################################################
-    par.path_to_music = '/Users/carolinscholl/Documents/PhD/rotations/2_triesch/midis/examples/1.mid' # insert path to music here
-    #os.path.join(os.path.realpath(__file__)))[1], 'midis/beat.mid') # insert path to music here
+    par.path_to_music = os.path.join(os.path.dirname(__file__),'..', '..','music_data', '1.mid') # insert path to music here
+    #'/Users/carolinscholl/Documents/PhD/rotations/2_triesch/midis/examples/1.mid' # insert path to music here
     par.max_corpus_size = 50000
 
 
-    par.steps_plastic = 10000 #100000                      # sorn training time steps
-    par.steps_readout = 5000#30000                    # readout train and test steps
+    par.steps_plastic = 100000                      # sorn training time steps
+    par.steps_readout = 30000                    # readout train and test steps
     par.steps_spont = 5000#50000                       # steps of spontaneous generation
 
 ################################################################################

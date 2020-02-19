@@ -107,7 +107,7 @@ class SparseSynapticMatrix:
 
             # verify that all neurons have at least one incomming synapse
             inc_synaps = np.sum(W_ee, axis=1)
-            if inc_synaps.__contains__(0):
+            if not inc_synaps.__contains__(0):
                 break
 
         # make the matrix sparse

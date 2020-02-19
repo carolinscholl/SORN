@@ -11,6 +11,7 @@ import numpy as np
 from sklearn import linear_model
 
 from .source import MusicSource as experiment_source
+import pypianoroll as piano
 
 class Experiment:
     """Experiment class.
@@ -24,6 +25,7 @@ class Experiment:
         Arguments:
         params -- Bunch of all sorn inital parameters
         """
+
 
         # always keep track of initial sorn parameters
         self.init_params = copy.deepcopy(params.par)
@@ -131,27 +133,29 @@ class Experiment:
 
         for _ in range(sorn.params.par.steps_spont):
             sorn.step(u)
-            symbol = int(readout_layer.predict(sorn.x.reshape(1,-1)))
+            ind = int(readout_layer.predict(sorn.x.reshape(1,-1)))
 
             one_hot = np.zeros(128) # make one-hot vector
-            if symbol != -1: # if network did not predict silence
-                one_hot[symbol] = 1
+            one = sorn.source.alphabet[ind] # translate SORN index to MIDI index
+            if one != -1: # if network did not predict silence
+                one_hot[one] = 1
             MIDI_output[_] = one_hot
 
-            print(sorn.source.index_to_symbol(symbol))
-            spont_output += sorn.source.index_to_symbol(symbol)
+            #print(sorn.source.index_to_symbol(ind))
+            spont_output += sorn.source.index_to_symbol(ind)
             u = np.zeros(n_symbols)
-            u[symbol] = 1
+            u[ind] = 1
 
         # Step 7. Generate a MIDI track
         track = piano.Track(MIDI_output)
         track.program = sorn.source.instrument
-        track = piano.Multitrack([track])
-        path_to_save = self.results_dir + '/sample.mid'
+        track.binarize()
+        track = piano.Multitrack(tracks=[track])
+        #path_to_save = self.results_dir + '/sample.mid'
 
-        track.write(path_to_save)
+        track.write('sample.mid')
 
-        # Step 7. Calculate parameters to save (exclude first and last sentences
+        # Step 8. Calculate parameters to save (exclude first and last sentences
         # and separate sentences by '.'. Also, remove extra spaces.
         #output_sentences = [s[1:]+'.' for s in spont_output.split('.')][1:-1]
 

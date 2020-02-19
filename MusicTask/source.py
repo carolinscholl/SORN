@@ -39,10 +39,13 @@ class MusicSource(object):
         # remove trailing silence and binarize (same loudness)
         multitrack.trim_trailing_silence()
         multitrack.binarize()
+        self.tempo = multitrack.tempo
+
         multitrack = piano.utilities.downsample(multitrack, 2) # only take every 2nd time step
+        self.tempo = self.tempo*2
 
         singletrack = multitrack.tracks[0]
-        self.instrument = singletrack.program # set the instrument (MIDI ID)
+        self.instrument = 1 #singletrack.program # set the instrument (MIDI ID, 1 is grand piano)
 
         p_roll = singletrack.pianoroll
         assert piano.metrics.polyphonic_rate(p_roll) == 0, 'Polyphonic rate above 0, need monophonic input'
@@ -64,8 +67,14 @@ class MusicSource(object):
         self.lowest_pitch = singletrack.get_active_pitch_range()[0]
         self.highest_pitch = singletrack.get_active_pitch_range()[1]
 
-        self.alphabet = list(range(self.lowest_pitch, self.highest_pitch+1)) # indices for piano roll
+        # if you want the alphabet to be reduced to notes between lowest and highest pitch in the training data
+        #self.alphabet = list(range(self.lowest_pitch, self.highest_pitch+1)) # indices for piano roll
+        # otherwise we assume the alphabet to be all possible notes on a grand piano (MIDI ID 21-108)
+        self.alphabet = list(range(21,109))
         self.alphabet.append(-1) # add this for silence (all zeros)
+
+        print('Lowest pitch in training data:', self.index_to_symbol(self.lowest_pitch))
+        print('Highest pitch in training data:', self.index_to_symbol(self.highest_pitch))
 
         self.A = len(self.alphabet) # alphabet size
 
@@ -125,7 +134,7 @@ class MusicSource(object):
 
     def index_to_symbol(self, index):
         """
-        Convert a MIDI index to the corresponding note
+        Convert a symbol index (from the network) to the corresponding note
 
         Arguments:
         index -- int, alphabet index (NOT to sequence index ind)
@@ -134,13 +143,17 @@ class MusicSource(object):
         symbol -- string corresponding to note
         """
 
-        if index == -1:
+        # first get the MIDI index
+        midi = self.alphabet[index]
+
+        # now translate this MIDI index to a string note
+        if midi == -1:
             note_as_string = 'silence'
         else:
-            octave = (index // len(self.notes))-1
+            octave = (midi // len(self.notes))-1
             assert octave in self.octaves, 'Illegal MIDI index'
-            assert 0 <= index <= 127, 'Illegal MIDI index'
-            note = self.notes[index % len(self.notes)]
+            assert 0 <= midi <= 127, 'Illegal MIDI index'
+            note = self.notes[midi % len(self.notes)]
 
             note_as_string = note + str(octave)
 
@@ -163,5 +176,5 @@ class MusicSource(object):
             self.ind = 0
 
         one_hot = np.zeros(self.A)
-        one_hot[self.alphabet.find(self.corpus[self.ind])] = 1
+        one_hot[self.alphabet.index(self.corpus[self.ind])] = 1
         return one_hot
