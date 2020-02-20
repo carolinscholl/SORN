@@ -40,7 +40,7 @@ def get_par():
 #                           Experiment parameters                              #
 ################################################################################
     par.path_to_text = '' # insert path to text here
-    # par.max_corpus_size = 50000
+    par.max_corpus_size = 50000
 
     par.steps_plastic = 100000                      # sorn training time steps
     par.steps_readout = 30000                    # readout train and test steps

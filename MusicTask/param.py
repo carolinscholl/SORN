@@ -29,20 +29,21 @@ def get_par():
 
     par.input_gain = 1                             # input gain factor
 
-    par.lamb = int(0.1*par.N_e) #10                    # number of out connections
+    par.lamb = int(0.1*par.N_e) #10                # number of out connections
 
     par.T_e_max = 0.5                              # max initial threshold for E
     par.T_e_min = 0                                # min initial threshold for E
-    par.T_i_max = 0.1 #0.5                             # max initial threshold for I
-    par.T_i_min = 0.1 #0                             # min initial threshold for I
+    par.T_i_max = 0.5 #0.1                         # max initial threshold for I
+    par.T_i_min = 0  #0.1                          # min initial threshold for I
 
 ################################################################################
 #                           Experiment parameters                              #
 ################################################################################
-    par.path_to_music = os.path.join(os.path.dirname(__file__),'..', '..','music_data', '1.mid') # insert path to music here
-    #'/Users/carolinscholl/Documents/PhD/rotations/2_triesch/midis/examples/1.mid' # insert path to music here
+    par.path_to_music = os.path.join(os.path.dirname(__file__),'..', '..','midis/') # insert path to music here
     par.max_corpus_size = 50000
-
+    par.which_alphabet = 0                      # 0: only pitches in training data,
+                                                # 1: only pitches between lowest and highest pitch in training data
+                                                # 2: all pitches possible on a grand piano (MIDI indices 21-108)
 
     par.steps_plastic = 100000                      # sorn training time steps
     par.steps_readout = 30000                    # readout train and test steps

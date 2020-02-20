@@ -82,7 +82,7 @@ class Experiment:
             print('\nReadout training phase:')
 
         sorn.params.par.eta_stdp = 'off'
-        # sorn.params.par.eta_ip = 'off'
+        sorn.params.par.eta_ip = 'off'
         sorn.simulation(stats, phase='train')
 
         # Step 3. Train readout layer with logistic regression
@@ -151,6 +151,8 @@ class Experiment:
         track.program = sorn.source.instrument
         track.binarize()
         track = piano.Multitrack(tracks=[track])
+        track.beat_resolution = sorn.source.beat_resolution
+        track.tempo = sorn.source.tempo
         #path_to_save = self.results_dir + '/sample.mid'
 
         track.write('sample.mid')
@@ -166,39 +168,20 @@ class Experiment:
         stats.W_eu = sorn.W_eu.W
         stats.T_e = sorn.T_e
         stats.T_e = sorn.T_e
+        # save specific performance per letter for plot
+        stats.spec_perf = spec_perf
+
+        # save a few stats about training data
+        stats.lowest_pitch = sorn.lowest_pitch
+        stats.highest_pitch = sorn.highest_pitch
+        stats.alphabet = sorn.alphabet
 
         # save some storage space by deleting some parameters.
         if hasattr(stats, 'aux'):
             del stats.aux
         if hasattr(stats, 'par'):
             del stats.par
-        # stats.spec_perf = spec_perf
+
 
         if display:
             print('\ndone!')
-
-
-'''
-    def generate_midi(self, output, n = 1, time_steps=5000):
-    """
-    Turn network's output into n MIDI tracks of length time_steps and save them.
-    TODO: save generated midis in experiment directory?
-    """
-    if len(output) / int(n * time_steps) > n :
-        n = int(len(output) / int(n * time_steps))
-    if n == 0: # output is shorter than time_steps, generate track of length of output
-        time_steps = len(output)
-        n = 1
-
-    titles = []
-    for t in range(n):
-        titles.append('sample_track{}.mid'.format(t+1))
-        track = np.zeros((time_steps, 128))
-
-        for ts in time_steps:
-            one_hot = np.zeros(128)
-            one_hot[output[ts]] = 1
-            track.append(one_hot)
-
-        # now generate the track object
-'''

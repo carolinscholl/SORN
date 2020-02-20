@@ -12,6 +12,7 @@ from common import synapses
 
 import pypianoroll as piano
 
+import os
 
 class MusicSource(object):
     """
@@ -32,25 +33,61 @@ class MusicSource(object):
         self.steps_plastic = params.steps_plastic
         self.steps_readout = params.steps_readout
         self.path_to_music = params.path_to_music
+        self.which_alphabet = params.which_alphabet
+        self.tempo = 120 # BPM
+        self.beat_resolution = 8 # 8 time steps per beat
+        self.instrument = 1 # set the instrument (MIDI ID, 1 is grand piano)
 
-        multitrack = piano.parse(self.path_to_music)
-        assert len(multitrack.tracks) == 1, 'Multiple tracks, need monophonic input'
 
-        # remove trailing silence and binarize (same loudness)
-        multitrack.trim_trailing_silence()
-        multitrack.binarize()
-        self.tempo = multitrack.tempo
+        # TODO: outsource this in its own function (generate music_corpus_from_MIDI_files or something)
+        sym_sequence = np.array([]).astype(np.int8)
+        curr_alphabet = {}
+        for i in os.listdir(self.path_to_music):
+            if i.endswith('.mid') or i.endswith('.midi'):
+                # remove trailing silence and binarize (same loudness)
+                multitrack = piano.parse(os.path.join(self.path_to_music, i))
+                multitrack.trim_trailing_silence()
+                multitrack.binarize()
+                multitrack = piano.utilities.downsample(multitrack, int(multitrack.beat_resolution/self.beat_resolution)) # sample down to 8 time steps per beat
+                multitrack.tempo = self.tempo
+                multitrack.beat_resolution = self.beat_resolution
 
-        multitrack = piano.utilities.downsample(multitrack, 2) # only take every 2nd time step
-        self.tempo = self.tempo*2
+                singletrack = multitrack.tracks[0]
+                singletrack.instrument = self.instrument #singletrack.program
 
-        singletrack = multitrack.tracks[0]
-        self.instrument = 1 #singletrack.program # set the instrument (MIDI ID, 1 is grand piano)
+                p_roll = singletrack.pianoroll
+                if piano.metrics.polyphonic_rate(p_roll) > 0: # we only work with monophonic input for now
+                    pass
+                else:
+                    temp = np.full(p_roll.shape[0], -1) # make a sequence of -1 (stands for silence)
+                    indices_non_zero = p_roll.nonzero() # find all time steps where a tone is played
+                    temp[indices_non_zero[0]] = indices_non_zero[1] # set non_zero time steps with the current index for pitch played
+                    sym_sequence = np.append(sym_sequence, temp)
+                    if len(sym_sequence) > params.max_corpus_size:
+                        break
 
-        p_roll = singletrack.pianoroll
-        assert piano.metrics.polyphonic_rate(p_roll) == 0, 'Polyphonic rate above 0, need monophonic input'
+        self.corpus = np.array(sym_sequence).flatten().astype(np.int8)
+        if len(self.corpus) > params.max_corpus_size:
+            self.corpus = self.corpus[:params.max_corpus_size]
 
-        # get most likely key of piece
+        # set the alphabet
+        if self.which_alphabet == 0: # just the notes that appear in corpus (like in text task)
+            self.alphabet = sorted(set(self.corpus))
+        elif self.which_alphabet == 1: # notes between lowest and highest pitch in the training data
+            min_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()] # need to ignore -1
+            max_pitch = self.corpus.max()
+            self.alphabet = list(range(min_pitch, max_pitch+1))
+            self.alphabet.append(-1)
+        else: # otherwise we assume the alphabet to be all possible notes on a grand piano (MIDI ID 21-108)
+            self.alphabet = list(range(21,109))
+            self.alphabet.append(-1) # add this for silence (all zeros)
+
+        self.A = len(self.alphabet) # alphabet size
+        print('alphabet size: ', self.A)
+        #print('alphabet:', self.alphabet)
+
+        '''
+        # get dominant key in corpus, right now only implemented if we use just one piece as input
         kind = ['minor', 'major']
         max_perc = 0
         key = np.zeros(3) # base tone, minor(0)/major(1), percent
@@ -63,32 +100,21 @@ class MusicSource(object):
                     key[1] = j
                     key[2] = curr_perc
         print('Key of current piece: ', key[0], kind[int(key[1])], 'percentage: ', key[2])
+        self.key = key
+        '''
 
-        self.lowest_pitch = singletrack.get_active_pitch_range()[0]
-        self.highest_pitch = singletrack.get_active_pitch_range()[1]
+        self.lowest_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()]
+        self.highest_pitch = self.corpus.max()
 
-        # if you want the alphabet to be reduced to notes between lowest and highest pitch in the training data
-        #self.alphabet = list(range(self.lowest_pitch, self.highest_pitch+1)) # indices for piano roll
-        # otherwise we assume the alphabet to be all possible notes on a grand piano (MIDI ID 21-108)
-        self.alphabet = list(range(21,109))
-        self.alphabet.append(-1) # add this for silence (all zeros)
-
-        print('Lowest pitch in training data:', self.index_to_symbol(self.lowest_pitch))
-        print('Highest pitch in training data:', self.index_to_symbol(self.highest_pitch))
-
-        self.A = len(self.alphabet) # alphabet size
-
-        indices_non_zero = p_roll.nonzero() # find all time steps were a tone is played
-        self.corpus = np.full(p_roll.shape[0], -1) # make a sequence of -1 (stands for silence)
-        self.corpus[indices_non_zero[0]] = indices_non_zero[1] # set non_zero time steps with the current index for pitch played
-
-        if len(self.corpus) > params.max_corpus_size:
-            self.corpus = self.corpus[:params.max_corpus_size]
+        print('Lowest midi index, ', self.lowest_pitch)
+        print('Highest midi index, ', self.highest_pitch)
+        print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
+        print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
 
         self.N_e = params.N_e
         self.N_u = params.N_u
 
-        # letter counter
+        # time step counter
         self.ind = -1                # index in the corpus
 
     def generate_connection_e(self, params):
@@ -112,7 +138,6 @@ class MusicSource(object):
             available = set([n for n in available if n not in temp])
             assert len(available) > 0,\
                    'Input alphabet too big for non-overlapping neurons'
-
         # always use a full synaptic matrix
         ans = synapses.FullSynapticMatrix(params, (self.N_e, self.A))
         ans.W = W
@@ -132,12 +157,34 @@ class MusicSource(object):
         ind = self.ind
         return ind
 
-    def index_to_symbol(self, index):
-        """
-        Convert a symbol index (from the network) to the corresponding note
+    def midi_index_to_symbol(self, index):
+        '''
+        Convert MIDI index to a string of the note
 
         Arguments:
-        index -- int, alphabet index (NOT to sequence index ind)
+        index -- int, MIDI index from 0-127 or -1 for silence
+
+        Returns:
+        string -- string corresponding to a note
+        '''
+        if index == -1:
+            note_as_string = 'silence'
+        else:
+            octave = (index // len(self.notes))-1
+            assert octave in self.octaves, 'Illegal MIDI index'
+            assert 0 <= index <= 127, 'Illegal MIDI index'
+            note = self.notes[index % len(self.notes)]
+
+            note_as_string = note + str(octave)
+
+        return note_as_string
+
+    def index_to_symbol(self, index):
+        """
+        Convert an alphabet index (from the network) to the corresponding note
+
+        Arguments:
+        index -- int, alphabet index
 
         Returns:
         symbol -- string corresponding to note
@@ -145,19 +192,7 @@ class MusicSource(object):
 
         # first get the MIDI index
         midi = self.alphabet[index]
-
-        # now translate this MIDI index to a string note
-        if midi == -1:
-            note_as_string = 'silence'
-        else:
-            octave = (midi // len(self.notes))-1
-            assert octave in self.octaves, 'Illegal MIDI index'
-            assert 0 <= midi <= 127, 'Illegal MIDI index'
-            note = self.notes[midi % len(self.notes)]
-
-            note_as_string = note + str(octave)
-
-        return note_as_string
+        return self.midi_index_to_symbol(midi)
 
     def next(self):
         """

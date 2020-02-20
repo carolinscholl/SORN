@@ -58,6 +58,9 @@ class Sorn:
         u_new -- one-hot array input for the current time step
         """
 
+        # x : excitatory neurons
+        # y : inhibitory neurons
+
         par = self.params.par
         aux = self.params.aux
 
@@ -91,8 +94,6 @@ class Sorn:
         # Update SORN variables
         self.x = x_new
         self.y = y_new
-        #print(x_new)
-        #print(y_new)
 
     def ip(self, x):
         """
