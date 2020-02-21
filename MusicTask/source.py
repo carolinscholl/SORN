@@ -35,11 +35,48 @@ class MusicSource(object):
         self.path_to_music = params.path_to_music
         self.which_alphabet = params.which_alphabet
         self.tempo = 120 # BPM
-        self.beat_resolution = 8 # 8 time steps per beat
+        self.beat_resolution = 24 # time steps per beat
         self.instrument = 1 # set the instrument (MIDI ID, 1 is grand piano)
 
+        # set corpus
+        generate_music_corpus_from_monophonic_MIDI_files()
 
-        # TODO: outsource this in its own function (generate music_corpus_from_MIDI_files or something)
+        # set the alphabet
+        if self.which_alphabet == 0: # just the notes that appear in corpus (like in text task)
+            self.alphabet = sorted(set(self.corpus))
+        elif self.which_alphabet == 1: # notes between lowest and highest pitch in the training data
+            min_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()] # need to ignore -1
+            max_pitch = self.corpus.max()
+            self.alphabet = list(range(min_pitch, max_pitch+1))
+            self.alphabet.append(-1)
+        else: # otherwise we assume the alphabet to be all possible notes on a grand piano (MIDI ID 21-108)
+            self.alphabet = list(range(21,109))
+            self.alphabet.append(-1) # add this for silence (all zeros)
+
+        self.A = len(self.alphabet) # alphabet size
+        print('alphabet size: ', self.A)
+        #print('alphabet:', self.alphabet)
+
+        self.lowest_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()]
+        self.highest_pitch = self.corpus.max()
+
+        print('Lowest midi index, ', self.lowest_pitch)
+        print('Highest midi index, ', self.highest_pitch)
+        print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
+        print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
+
+        self.N_e = params.N_e
+        self.N_u = params.N_u
+
+        # time step counter
+        self.ind = -1                # index in the corpus
+
+    def generate_music_corpus_from_monophonic_MIDI_files(self):
+        '''
+        Reads in MIDI files placed in dir self.path_to_music in a pianoroll format.
+        Generates a symbolic one-dimensional corpus array of length sum of time
+        steps of all files or self.max_corpus_size and saves it in self.corpus
+        '''
         sym_sequence = np.array([]).astype(np.int8)
         curr_alphabet = {}
         for i in os.listdir(self.path_to_music):
@@ -48,9 +85,9 @@ class MusicSource(object):
                 multitrack = piano.parse(os.path.join(self.path_to_music, i))
                 multitrack.trim_trailing_silence()
                 multitrack.binarize()
-                multitrack = piano.utilities.downsample(multitrack, int(multitrack.beat_resolution/self.beat_resolution)) # sample down to 8 time steps per beat
-                multitrack.tempo = self.tempo
-                multitrack.beat_resolution = self.beat_resolution
+                #multitrack.downsample(int(multitrack.beat_resolution/self.beat_resolution)) # sample down to self_beat_resolution time steps per beat
+                #multitrack.tempo = self.tempo
+                #multitrack.beat_resolution = self.beat_resolution
 
                 singletrack = multitrack.tracks[0]
                 singletrack.instrument = self.instrument #singletrack.program
@@ -70,22 +107,6 @@ class MusicSource(object):
         if len(self.corpus) > params.max_corpus_size:
             self.corpus = self.corpus[:params.max_corpus_size]
 
-        # set the alphabet
-        if self.which_alphabet == 0: # just the notes that appear in corpus (like in text task)
-            self.alphabet = sorted(set(self.corpus))
-        elif self.which_alphabet == 1: # notes between lowest and highest pitch in the training data
-            min_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()] # need to ignore -1
-            max_pitch = self.corpus.max()
-            self.alphabet = list(range(min_pitch, max_pitch+1))
-            self.alphabet.append(-1)
-        else: # otherwise we assume the alphabet to be all possible notes on a grand piano (MIDI ID 21-108)
-            self.alphabet = list(range(21,109))
-            self.alphabet.append(-1) # add this for silence (all zeros)
-
-        self.A = len(self.alphabet) # alphabet size
-        print('alphabet size: ', self.A)
-        #print('alphabet:', self.alphabet)
-
         '''
         # get dominant key in corpus, right now only implemented if we use just one piece as input
         kind = ['minor', 'major']
@@ -103,19 +124,6 @@ class MusicSource(object):
         self.key = key
         '''
 
-        self.lowest_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()]
-        self.highest_pitch = self.corpus.max()
-
-        print('Lowest midi index, ', self.lowest_pitch)
-        print('Highest midi index, ', self.highest_pitch)
-        print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
-        print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
-
-        self.N_e = params.N_e
-        self.N_u = params.N_u
-
-        # time step counter
-        self.ind = -1                # index in the corpus
 
     def generate_connection_e(self, params):
         """
