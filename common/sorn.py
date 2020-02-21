@@ -55,7 +55,7 @@ class Sorn:
         Performs a one-step update of the SORN.
 
         Arguments:
-        u_new -- one-hot array input for the current time step
+        u_new -- n-hot array input for the current time step
         """
 
         # x : excitatory neurons

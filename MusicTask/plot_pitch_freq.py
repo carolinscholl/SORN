@@ -20,26 +20,22 @@ SAVE_PLOT = True
 # 0. build figures
 fig = plt.figure(1, figsize=(10, 6))
 
-with open(r'../data/M72_raw/corpus_simple.txt', "rt") as fin:
-     corpus = fin.read().replace('\n', '').lower()
-     chars_to_remove = '-&+1237=[]^_'
-     for c in list(chars_to_remove):
-         corpus = corpus.replace(c,'')
+# TODO: only implemented for symbolic MIDI input/output scalar values at the moment
+# NEED TO READ IN CORPUS ACCORDING TO SOME VALUES SAVED IN STATS:
+# max_corpus_size, beat_resolution etc.
+# first assert that they are the same for all models, then use them to generate the corpus
 
-chars_input = Counter(corpus)
-sorted_chars = [x[0] for x in sorted(chars_input.items(), key=lambda kv: kv[1], reverse=True)]
-freq_input = np.array([chars_input[x] for x in sorted_chars])
-freq_input = freq_input/freq_input.sum()
 
 stats = {}
 for n in N:
-    experiment_tag = 'CHILDES_N{}_Tp500000_Tr30000'.format(n)
-    experiment_folder = 'TextTask_' + experiment_tag
+    experiment_tag = 'MIDIS_N{}_Tp100000_Tr30000'.format(n)
+    experiment_folder = 'MusicTask_' + experiment_tag
     experiment_path = 'backup/' + experiment_folder + '/'
 
+    stats[str(n)] = {}
     for exp, exp_name in enumerate(os.listdir(experiment_path)):
         exp_n = [int(s) for s in exp_name.split('_') if s.isdigit()]
-        stats[str(exp)] = pickle.load(open(experiment_path+exp_name+'/stats.p', 'rb'))
+        stats[str(n)][str(exp_n[0])] = pickle.load(open(experiment_path+exp_name+'/stats.p', 'rb'))
 
     output = []
     for k, v in stats.items():
@@ -49,21 +45,3 @@ for n in N:
     output_counter = Counter(output)
     freq_output = np.array([output_counter[x] for x in sorted_chars])
     freq_output = freq_output/freq_output.sum()
-
-    plt.plot(np.arange(len(freq_input)), freq_output, linewidth='1', label='{}'.format(n))
-
-plt.plot(np.arange(len(freq_input)), freq_input, linewidth='3', color='k', label='CHILDES')
-leg = plt.legend(loc='best', frameon=False, fontsize=18)
-leg.set_title('Network size',prop={'size':18})
-plt.xticks(np.arange(len(sorted_chars)), sorted_chars, fontsize=15)
-plt.yticks([0, 0.1, 0.2, 0.3],
-           ['0%', '10%', '20%', '30%'], fontsize=18)
-plt.ylim([0, 0.3])
-plt.ylabel('frequency', fontsize=18)
-plt.tight_layout()
-if SAVE_PLOT:
-    plots_dir = 'plots/TextTask/'
-    if not os.path.exists(plots_dir):
-        os.makedirs(plots_dir)
-    plt.savefig(plots_dir+'CHILDES_letter_counts.pdf', format='pdf')
-plt.show()

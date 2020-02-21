@@ -90,10 +90,13 @@ class Experiment:
             print('\nTraining readout layer...')
         t_train = sorn.params.aux.steps_readouttrain
         X_train = stats.raster_readout[:t_train-1]
-        y_train = stats.input_readout[1:t_train].T.astype(int)
+        if sorn.params.par.input_size == 1:
+            y_train = stats.input_readout[1:t_train].T.astype(int)
+        else:
+            y_train = stats.input_readout[1:t_train,:]
         n_symbols = sorn.source.A
         lg = linear_model.LogisticRegression()
-        readout_layer = lg.fit(X_train, y_train)
+        readout_layer = lg.fit(X_train, y_train) # not yet working for polyphony (vector input/output)
 
         # Step 4. Input without plasticity: test (with STDP and IP off)
         if display:
@@ -106,15 +109,20 @@ class Experiment:
             print('\nTesting readout layer...')
         t_test = sorn.params.aux.steps_readouttest
         X_test = stats.raster_readout[t_train:t_train+t_test-1]
-        y_test = stats.input_readout[1+t_train:t_train+t_test].T.astype(int)
+        if sorn.params.par.input_size == 1:
+            y_test = stats.input_readout[1+t_train:t_train+t_test].T.astype(int)
+        else:
+            y_test = stats.input_readout[1:t_train:t_train+t_test,:]
 
         # store the performance for each letter in a dictionary
-        spec_perf = {}
-        for symbol in np.unique(y_test):
-            symbol_pos = np.where(symbol == y_test)
-            spec_perf[sorn.source.index_to_symbol(symbol)]=\
-                                         readout_layer.score(X_test[symbol_pos],
-                                                             y_test[symbol_pos])
+        if sorn.params.par.input_size == 1:
+            spec_perf = {}
+            for symbol in np.unique(y_test):
+                symbol_pos = np.where(symbol == y_test)
+                spec_perf[sorn.source.index_to_symbol(symbol)]=\
+                                             readout_layer.score(X_test[symbol_pos],
+                                                                 y_test[symbol_pos])
+        #else: TODO not yet implemented for polyphony
 
         # Step 6. Generative SORN with spont_activity (retro feed input)
         if display:
@@ -122,8 +130,11 @@ class Experiment:
 
         # begin with the prediction from the last step
         symbol = readout_layer.predict(X_test[-1].reshape(1,-1))
-        u = np.zeros(n_symbols)
-        u[symbol] = 1
+        if sorn.params.par.input_size == 1:
+            u = np.zeros(n_symbols)
+            u[symbol] = 1
+        else:
+            u = symbol
 
         # update sorn and predict next input
         spont_output = ''
@@ -133,18 +144,23 @@ class Experiment:
 
         for _ in range(sorn.params.par.steps_spont):
             sorn.step(u)
-            ind = int(readout_layer.predict(sorn.x.reshape(1,-1)))
 
-            one_hot = np.zeros(128) # make one-hot vector
-            one = sorn.source.alphabet[ind] # translate SORN index to MIDI index
-            if one != -1: # if network did not predict silence
-                one_hot[one] = 1
-            MIDI_output[_] = one_hot
+            if sorn.params.par.input_size == 1:
+                ind = int(readout_layer.predict(sorn.x.reshape(1,-1)))
 
-            #print(sorn.source.index_to_symbol(ind))
-            spont_output += sorn.source.index_to_symbol(ind)
-            u = np.zeros(n_symbols)
-            u[ind] = 1
+                one_hot = np.zeros(128) # make one-hot vector
+                one = sorn.source.alphabet[ind] # translate SORN index to MIDI index
+                if one != -1: # if network did not predict silence
+                    one_hot[one] = 1
+                MIDI_output[_] = one_hot
+
+                #print(sorn.source.index_to_symbol(ind))
+                spont_output += sorn.source.index_to_symbol(ind)
+                u = np.zeros(n_symbols)
+                u[ind] = 1
+
+            #else:
+                # TODO: not yet impolemented for polyphony
 
         # Step 7. Generate a MIDI track
         track = piano.Track(MIDI_output)
@@ -152,7 +168,7 @@ class Experiment:
         track.binarize()
         track = piano.Multitrack(tracks=[track])
         track.beat_resolution = sorn.source.beat_resolution
-        track.tempo = sorn.source.tempo
+        #track.tempo = int(sorn.source.tempo)
         #path_to_save = self.results_dir + '/sample.mid'
 
         track.write('sample.mid')
@@ -172,9 +188,11 @@ class Experiment:
         stats.spec_perf = spec_perf
 
         # save a few stats about training data
-        stats.lowest_pitch = sorn.lowest_pitch
-        stats.highest_pitch = sorn.highest_pitch
-        stats.alphabet = sorn.alphabet
+        stats.lowest_pitch = sorn.source.lowest_pitch
+        stats.highest_pitch = sorn.source.highest_pitch
+        stats.alphabet = sorn.source.alphabet
+        stats.input_size = sorn.source.input_size
+        stats.beat_resolution = sorn.source.beat_resolution
 
         # save some storage space by deleting some parameters.
         if hasattr(stats, 'aux'):

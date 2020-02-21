@@ -41,13 +41,15 @@ def get_par():
 ################################################################################
     par.path_to_music = os.path.join(os.path.dirname(__file__),'..', '..','midis/') # insert path to music here
     par.max_corpus_size = 50000
-    par.which_alphabet = 0                      # 0: only pitches in training data,
-                                                # 1: only pitches between lowest and highest pitch in training data
-                                                # 2: all pitches possible on a grand piano (MIDI indices 21-108)
-
-    par.steps_plastic = 100000                      # sorn training time steps
-    par.steps_readout = 30000                    # readout train and test steps
-    par.steps_spont = 5000#50000                       # steps of spontaneous generation
+    par.input_size = 1                          # size of input vector, e.g. 88 if you use MIDI pianoroll n-hot arrays for each time step (no initial conversion to a symbolic alphabet)
+                                                # 1 if you use a scalar value (i.e. want to convert pianoroll vectors to symbolic MIDI indices)
+    par.which_alphabet = 'train'                # 'train': symbolic alphabet, only pitches in training data,
+                                                # 'minmax': symbolic alphabet, only pitches between lowest and highest pitch in training data
+                                                # 'all': symbolic alphabet, all pitches possible on a grand piano (MIDI indices 21-108)
+                                                # -> only necessary to set this parameter if we have a symbolic alphabet instead of pianoroll vectors
+    par.steps_plastic = 1000                      # sorn training time steps
+    par.steps_readout = 300                    # readout train and test steps
+    par.steps_spont = 500#50000                # steps of spontaneous generation
 
 ################################################################################
 #                    Additional derivative SORN parameters                     #
@@ -64,7 +66,7 @@ def get_aux():
     # the experiment_name should be the same name of the directory containing it
     aux.experiment_name = os.path.split(os.path.dirname(\
                                         os.path.realpath(__file__)))[1]
-    # training ans testing time steps
+    # training and testing time steps
     aux.steps_readouttrain = par.steps_readout
     aux.steps_readouttest = par.steps_readout
 

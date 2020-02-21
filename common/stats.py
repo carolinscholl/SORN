@@ -34,12 +34,15 @@ class Stats(object):
             self.connec_frac = np.zeros(params.aux.N_steps)
 
         if 'InputReadoutStat' in stats_tostore:
-            self.input_readout = np.zeros(params.aux.readout_steps,
-                                          dtype=np.int16)
+            if hasattr(self.par, 'input_size') and params.par.input_size != 1:# input is a vector, not a scalar
+                    self.input_readout = np.zeros((params.aux.readout_steps, params.par.input_size), dtype=bool)
+            else:
+                self.input_readout = np.zeros(params.aux.readout_steps,
+                                         dtype=np.int16)
             self.input_index_readout = np.zeros(params.aux.readout_steps,
                                           dtype=np.int16)
 
-        if 'RasterReadoutStat' in stats_tostore:
+        if 'RasterReadoutStat' in stats_tostore: # network state, used as input to classifier
             self.raster_readout = np.zeros((params.aux.readout_steps,
                                             params.par.N_e),
                                             dtype=np.int8)
@@ -50,7 +53,7 @@ class Stats(object):
 
         Arguments:
         x -- current activity array
-        u -- one-hot array of the current input
+        u -- n-hot array of the current input
         source -- the SORN source object
         W_ee -- Sparse synapses matrix of size (N_e, N_e)
         step -- current time step
@@ -81,7 +84,10 @@ class Stats(object):
                                        W_ee.W.data.size / float(self.par.N_e**2)
 
         if hasattr(self, 'input_readout') and phase in readout:
-            self.input_readout[step] = np.argmax(u)
+            if hasattr(self.par, 'input_size') and self.par.input_size != 1: # vector input, not scalar input
+                    self.input_readout[step] = u
+            else:
+                self.input_readout[step] = np.argmax(u)
             self.input_index_readout[step] = source.sequence_ind()
 
         if hasattr(self, 'raster_readout') and phase in readout:
