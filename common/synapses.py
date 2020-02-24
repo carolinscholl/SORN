@@ -2,7 +2,7 @@
 
 This script contains all the functions to create and update the weight
 matrices, including the plasticity rules STDP, iSTDP, SN and SP. As a rule,
-W_EE is sparce and W_IE, W_IE, W_EU are dense.
+W_EE is sparse and W_IE, W_IE, W_EU are dense.
 """
 
 import numpy as np
@@ -66,7 +66,6 @@ class FullSynapticMatrix:
         Replace matrix-array multiplication for dot product, in order to make
         the code a big shorter and more readable.
         """
-
         return self.W.dot(x)
 
 

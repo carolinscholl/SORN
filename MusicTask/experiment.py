@@ -9,6 +9,9 @@ from collections import Counter
 import os
 import numpy as np
 from sklearn import linear_model
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+
 from .source import MusicSource as experiment_source
 import pypianoroll as piano
 
@@ -84,18 +87,24 @@ class Experiment:
         sorn.params.par.eta_ip = 'off'
         sorn.simulation(stats, phase='train')
 
-        # Step 3. Train readout layer with logistic regression
+        # Step 3. Train readout layer
         if display:
             print('\nTraining readout layer...')
         t_train = sorn.params.aux.steps_readouttrain
         X_train = stats.raster_readout[:t_train-1]
-        if sorn.params.par.input_size == 1:
-            y_train = stats.input_readout[1:t_train].T.astype(int)
-        else:
-            y_train = stats.input_readout[1:t_train,:]
         n_symbols = sorn.source.A
-        lg = linear_model.LogisticRegression()
-        readout_layer = lg.fit(X_train, y_train) # not yet working for polyphony (vector input/output)
+
+        if sorn.params.par.input_size == 1: # multi-class mono-label classification (monophony)
+            y_train = stats.input_readout[1:t_train].T.astype(int)
+            lg = linear_model.LogisticRegression()
+            readout_layer = lg.fit(X_train, y_train)
+        else: # multi-class multi-label classification (polyphony)
+            y_train = stats.input_readout[1:t_train,:]
+            #clf = linear_model.RidgeClassifierCV() # https://github.com/scikit-learn/scikit-learn/issues/5562
+            #clf = MLPClassifier(max_iter=1000, hidden_layer_sizes=(100,100,100,), random_state=1)
+            clf = RandomForestClassifier(n_estimators=100)
+            readout_layer = clf.fit(X_train, y_train)
+
 
         # Step 4. Input without plasticity: test (with STDP and IP off)
         if display:
@@ -121,19 +130,26 @@ class Experiment:
                 spec_perf[sorn.source.index_to_symbol(symbol)]=\
                                              readout_layer.score(X_test[symbol_pos],
                                                                  y_test[symbol_pos])
+        # save specific performance per letter for plot
+            stats.spec_perf = spec_perf
+
         #else: TODO not yet implemented for polyphony
+
 
         # Step 6. Generative SORN with spont_activity (retro feed input)
         if display:
             print('\nSpontaneous phase:')
 
         # begin with the prediction from the last step
-        symbol = readout_layer.predict(X_test[-1].reshape(1,-1))
         if sorn.params.par.input_size == 1:
+            symbol = readout_layer.predict(X_test[-1].reshape(1,-1))
             u = np.zeros(n_symbols)
             u[symbol] = 1
         else:
-            u = symbol
+            u = readout_layer.predict(X_test[-1,:].reshape(1, -1).astype(np.int8))
+            #u = readout_layer.decision_function(X_test[-1,:].reshape(1,-1))
+            u = np.squeeze(u).astype(np.bool_)
+            #u = (u > 0).astype(int)
 
         # update sorn and predict next input
         spont_output = ''
@@ -158,8 +174,25 @@ class Experiment:
                 u = np.zeros(n_symbols)
                 u[ind] = 1
 
-            #else:
-                # TODO: not yet impolemented for polyphony
+            else:
+                u = readout_layer.predict(sorn.x.reshape(1, -1).astype(np.int8))
+                print(u)
+                #u= readout_layer.decision_function(sorn.x.reshape(1,-1))
+                u = np.squeeze(u).astype(np.bool_)
+                #u = (u > 0).astype(int)
+                MIDI_output[_, 21:109] = u
+
+                if np.count_nonzero(u) == 0:
+                    spont_output += 'silence, '
+                else:
+                    nonzeros = u.nonzero()[0] # get indices
+                    for i in range(len(nonzeros)):
+                        spont_output += sorn.source.midi_index_to_symbol(int(nonzeros[i]+21))+' '
+
+                    spont_output+=',' # add comma to mark next time step
+
+        print(np.count_nonzero(MIDI_output))
+        print(MIDI_output.shape)
 
         # Step 7. Generate a MIDI track
         track = piano.Track(MIDI_output)
@@ -179,8 +212,6 @@ class Experiment:
         stats.W_eu = sorn.W_eu.W
         stats.T_e = sorn.T_e
         stats.T_e = sorn.T_e
-        # save specific performance per letter for plot
-        stats.spec_perf = spec_perf
 
         # save a few stats about training data
         stats.lowest_pitch = sorn.source.lowest_pitch

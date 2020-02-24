@@ -68,6 +68,7 @@ class Sorn:
         self.R_x = self.W_ee*self.x - self.W_ei*self.y - self.T_e
         if hasattr(par, 'sigma'):
             self.R_x += par.sigma*np.random.rand(par.N_e)
+
         x_temp = self.R_x + par.input_gain*(self.W_eu*u_new)
         self.x_int = (self.R_x >= 0.0)+0
         x_new = (x_temp >= 0.0)+0
