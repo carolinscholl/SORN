@@ -8,7 +8,7 @@ import time
 import pickle
 import shutil
 from shutil import ignore_patterns
-
+import pypianoroll
 import numpy as np
 
 
@@ -43,6 +43,10 @@ def backup_pickle(experiment, stats):
             pickle.dump(params, f)
 
     if 'stats' in files_tosave:
+        # generate MIDI track if MusicTask
+        if hasattr(stats, 'track'):
+            stats.track.write(final_dir+'sample.mid')
+
         # delete attributes that occupy a lot of memory space
         if hasattr(stats, 'input_index_readout'):
             del stats.input_index_readout

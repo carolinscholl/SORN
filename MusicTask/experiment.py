@@ -6,10 +6,9 @@ experiment.
 
 import copy
 from collections import Counter
-
+import os
 import numpy as np
 from sklearn import linear_model
-
 from .source import MusicSource as experiment_source
 import pypianoroll as piano
 
@@ -49,12 +48,12 @@ class Experiment:
         # params: save initial main sorn parameters
         # stats: save all stats trackers
         # scripts: back-up scripts used during the simulation
-        # tracks: generate some exemplary MIDI files
+        # track: generate some exemplary MIDI files
         self.files_tosave = [
             'params',
             'stats',
             'scripts',
-            'tracks'
+            'track'
         ]
 
         # create and load input source
@@ -169,13 +168,9 @@ class Experiment:
         track = piano.Multitrack(tracks=[track])
         track.beat_resolution = sorn.source.beat_resolution
         #track.tempo = int(sorn.source.tempo)
-        #path_to_save = self.results_dir + '/sample.mid'
 
-        track.write('sample.mid')
-
-        # Step 8. Calculate parameters to save (exclude first and last sentences
-        # and separate sentences by '.'. Also, remove extra spaces.
-        #output_sentences = [s[1:]+'.' for s in spont_output.split('.')][1:-1]
+        # save the MIDI file
+        stats.track = track
 
         stats.output = spont_output   #''.join(output_sentences)
         stats.W_ee = sorn.W_ee.W
