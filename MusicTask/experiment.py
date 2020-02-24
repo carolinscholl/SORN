@@ -155,7 +155,7 @@ class Experiment:
                 MIDI_output[_] = one_hot
 
                 #print(sorn.source.index_to_symbol(ind))
-                spont_output += sorn.source.index_to_symbol(ind)
+                spont_output += sorn.source.index_to_symbol(ind)+' '
                 u = np.zeros(n_symbols)
                 u[ind] = 1
 

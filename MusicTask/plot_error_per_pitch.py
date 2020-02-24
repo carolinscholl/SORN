@@ -30,7 +30,9 @@ for n in N:
     stats[str(n)] = {}
     for exp, exp_name in enumerate(os.listdir(experiment_path)):
         exp_n = [int(s) for s in exp_name.split('_') if s.isdigit()]
-        stats[str(n)][str(exp_n[0])] = pickle.load(open(experiment_path+exp_name+'/stats.p', 'rb'))
+        stats[str(exp)] = pickle.load(open(experiment_path+exp_name+'/stats.p', 'rb'))
+        #exp_n = [int(s) for s in exp_name.split('_') if s.isdigit()]
+        #stats[str(n)][str(exp_n[0])] = pickle.load(open(experiment_path+exp_name+'/stats.p', 'rb'))
 width = 0.2
 
 for i, (n, scores) in enumerate(stats.items()):
