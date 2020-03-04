@@ -4,6 +4,7 @@ help.rtf
 *.out
 /*.out
 /MusicTask/midis
+.idea/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
