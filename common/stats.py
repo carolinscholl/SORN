@@ -85,7 +85,7 @@ class Stats(object):
 
         if hasattr(self, 'input_readout') and phase in readout:
             if hasattr(self.par, 'input_size') and self.par.input_size != 1: # vector input, not scalar input
-                    self.input_readout[step] = u
+                    self.input_readout[step,:] = u
             else:
                 self.input_readout[step] = np.argmax(u)
             self.input_index_readout[step] = source.sequence_ind()

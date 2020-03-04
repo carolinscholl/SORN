@@ -40,8 +40,8 @@ class MusicSource(object):
             self.which_alphabet = params.which_alphabet
 
         self.tempo = int(120) # BPM
-        self.beat_resolution = 24 # time steps per beat
-        self.instrument = 1 # set the instrument (MIDI ID, 1 is grand piano)
+        self.beat_resolution = int(24) # time steps per beat
+        self.instrument = int(1) # set the instrument (MIDI ID, 1 is grand piano)
 
         # set corpus
         # TODO: preprocessing step: transpose all MIDI files to the same key, e.g. C major
@@ -72,15 +72,14 @@ class MusicSource(object):
             #sets alphabet for corpus of of n-hot arrays.
             #Set alphabet to be all notes that can be played on a grand piano.
             self.alphabet = list(range(21,109)) # sorted(set(indices_non_zero[1]))
-            self.A = len(self.alphabet)
 
             self.lowest_pitch = min(self.alphabet)
             self.highest_pitch = max(self.alphabet)
 
             print('Lowest midi index, ', self.lowest_pitch)
             print('Highest midi index, ', self.highest_pitch)
-            print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
-            print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
+            print('Lowest possible pitch:', self.midi_index_to_symbol(self.lowest_pitch))
+            print('Highest possible pitch:', self.midi_index_to_symbol(self.highest_pitch))
 
         else:
             # the corpus consists of converted pianorolls to an intermediate symbolic representation (MIDI indices),
@@ -110,7 +109,7 @@ class MusicSource(object):
     def generate_pianoroll_music_corpus(self, max_length):
         '''
         Reads in MIDI files placed in dir self.path_to_music in a pianoroll format
-        and generates a corpus array of shape (time steps x 128) or (max_length x 128).
+        and generates a corpus array of shape (time steps x 88) or (max_length x 88).
         Corpus consists of pianorolls which are basically concatenated n-hot arrays.
         Like that, polyphonic music is allowed.
         Also sets the dominant key for the corpus.
@@ -153,7 +152,6 @@ class MusicSource(object):
         self.key = key
 
         self.corpus = self.corpus[:, 21:109] # only select MIDI indices that correspond to notes on a grand piano
-
 
     def generate_MIDIindex_music_corpus(self, max_length):
         '''

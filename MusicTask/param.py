@@ -40,7 +40,7 @@ def get_par():
 #                           Experiment parameters                              #
 ################################################################################
     par.path_to_music = os.path.join(os.path.dirname(__file__),'..', '..','midis/') # insert path to music here
-    par.max_corpus_size = 50000
+    par.max_corpus_size = 20000
     par.input_size = 88                          # size of input vector, e.g. 88 if you use MIDI pianoroll n-hot arrays for each time step (no initial conversion to a symbolic alphabet)
                                                 # 1 if you use a scalar value (i.e. want to convert pianoroll vectors to symbolic MIDI indices)
     par.which_alphabet = 'train'                # 'train': symbolic alphabet, only pitches in training data,
@@ -48,8 +48,8 @@ def get_par():
                                                 # 'all': symbolic alphabet, all pitches possible on a grand piano (MIDI indices 21-108)
                                                 # -> only necessary to set this parameter if we have a symbolic alphabet instead of pianoroll vectors
     par.steps_plastic = 1000                   # sorn training time steps
-    par.steps_readout = 5000                    # readout train and test steps
-    par.steps_spont = 5000                # steps of spontaneous generation
+    par.steps_readout = 20000                    # readout train and test steps
+    par.steps_spont = 100                     # steps of spontaneous generation
 
 ################################################################################
 #                    Additional derivative SORN parameters                     #

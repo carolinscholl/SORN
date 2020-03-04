@@ -106,6 +106,7 @@ class Experiment:
             readout_layer = clf.fit(X_train, y_train)
 
 
+
         # Step 4. Input without plasticity: test (with STDP and IP off)
         if display:
             print('\nReadout testing phase:')
@@ -120,7 +121,9 @@ class Experiment:
         if sorn.params.par.input_size == 1:
             y_test = stats.input_readout[1+t_train:t_train+t_test].T.astype(int)
         else:
-            y_test = stats.input_readout[1:t_train:t_train+t_test,:]
+            y_test = stats.input_readout[1+t_train:t_train+t_test,:]
+
+
 
         # store the performance for each letter in a dictionary
         if sorn.params.par.input_size == 1:
@@ -155,7 +158,7 @@ class Experiment:
         spont_output = ''
 
         # save symbols for MIDI files
-        MIDI_output = np.zeros((sorn.params.par.steps_spont, 128))
+        MIDI_output = np.zeros((sorn.params.par.steps_spont, 128)).astype(np.bool_)
 
         for _ in range(sorn.params.par.steps_spont):
             sorn.step(u)
@@ -176,10 +179,12 @@ class Experiment:
 
             else:
                 u = readout_layer.predict(sorn.x.reshape(1, -1).astype(np.int8))
-                print(u)
-                #u= readout_layer.decision_function(sorn.x.reshape(1,-1))
-                u = np.squeeze(u).astype(np.bool_)
+                SORN_states.append(sorn.x.reshape(1,-1))
+                #u= readout_layer.decision_function(sorn.x.reshape(1,-1)) # for ridge regression classifier
                 #u = (u > 0).astype(int)
+
+                u = np.squeeze(u).astype(np.bool_)
+
                 MIDI_output[_, 21:109] = u
 
                 if np.count_nonzero(u) == 0:
@@ -190,9 +195,6 @@ class Experiment:
                         spont_output += sorn.source.midi_index_to_symbol(int(nonzeros[i]+21))+' '
 
                     spont_output+=',' # add comma to mark next time step
-
-        print(np.count_nonzero(MIDI_output))
-        print(MIDI_output.shape)
 
         # Step 7. Generate a MIDI track
         track = piano.Track(MIDI_output)
