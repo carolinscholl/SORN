@@ -41,7 +41,7 @@ def get_par():
 ################################################################################
     par.path_to_music = os.path.join(os.path.dirname(__file__),'..', '..','midis/') # insert path to music here
     par.max_corpus_size = 20000
-    par.input_size = 88                          # size of input vector, e.g. 88 if you use MIDI pianoroll n-hot arrays for each time step (no initial conversion to a symbolic alphabet)
+    par.input_size = 1                          # size of input vector, e.g. 88 if you use MIDI pianoroll n-hot arrays for each time step (no initial conversion to a symbolic alphabet)
                                                 # 1 if you use a scalar value (i.e. want to convert pianoroll vectors to symbolic MIDI indices)
     par.which_alphabet = 'train'                # 'train': symbolic alphabet, only pitches in training data,
                                                 # 'minmax': symbolic alphabet, only pitches between lowest and highest pitch in training data

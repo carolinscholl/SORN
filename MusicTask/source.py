@@ -47,15 +47,16 @@ class MusicSource(object):
         # TODO: preprocessing step: transpose all MIDI files to the same key, e.g. C major
         if self.input_size != 1:
             print('Use pianoroll as input, no intermediate conversion to symbolic alphabet.')
-            self.generate_pianoroll_music_corpus(params.max_corpus_size)
+            self.corpus = self.generate_pianoroll_music_corpus(params.max_corpus_size)
         else:
             print('Generate intermediate symbolic alphabet for monophonic input.')
-            self.generate_MIDIindex_music_corpus(params.max_corpus_size)
+            self.corpus = self.generate_MIDIindex_music_corpus(params.max_corpus_size)
 
         # set alphabet
-        self.set_alphabet()
+        self.alphabet = self.set_alphabet()
         self.A = len(self.alphabet) # alphabet size
         print('alphabet size: ', self.A)
+        self.key = self.get_dominant_key(self.convert_symbolsequence_to_pianoroll(self.corpus))
 
         self.N_e = params.N_e
         self.N_u = params.N_u
@@ -100,6 +101,46 @@ class MusicSource(object):
         print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
         print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
 
+        return self.alphabet
+
+    def convert_symbolsequence_to_pianoroll(self, sequence = None):
+        if sequence is None:
+            sequence = self.corpus
+        pianoroll = np.empty((len(sequence), 128)).astype(bool)
+        for i in range(len(sequence)):
+            if self.input_size == 1:
+                index = sequence[i]
+                if index == 0:
+                    pianoroll[i] = np.zeros(128)
+                else:
+                    one_hot = np.zeros(128) # make one-hot vector
+                    #midi_index = self.alphabet[index]
+                    one_hot[index] = True
+                    pianoroll[i] = one_hot
+            else:
+                pianoroll[i, self.alphabet] = sequence[i]
+        return pianoroll
+
+    def get_dominant_key(self, pianoroll=None):
+        if pianoroll is None:
+            if input_size == 1:
+                pianoroll = convert_symbolsequence_to_pianoroll(self.corpus)
+            else:
+                pianoroll = np.zeros((len(self.corpus), 128)).astype(np.bool_)
+                pianoroll[:, self.alphabet] = self.corpus
+
+        kind = ['minor', 'major']
+        max_perc = 0
+        key = np.zeros(3) # base tone, minor(0)/major(1), percent
+        for i in range(12):
+            for j in range(2):
+                curr_perc = piano.metrics.in_scale_rate(pianoroll, key=i, kind=kind[j])
+                if curr_perc > max_perc:
+                    max_perc = curr_perc
+                    key[0] = i
+                    key[1] = j
+                    key[2] = curr_perc
+        return {'key': [key[0], kind[int(key[1])]], 'percentage': key[2]}
 
     def generate_pianoroll_music_corpus(self, max_length):
         '''
@@ -107,12 +148,11 @@ class MusicSource(object):
         and generates a corpus array of shape (time steps x 88) or (max_length x 88).
         Corpus consists of pianorolls which are basically concatenated n-hot arrays.
         Like that, polyphonic music is allowed.
-        Also sets the dominant key for the corpus.
 
         Arguments:
         max_length -- maximum length of the corpus
         '''
-        self.corpus = np.empty((0, 128)).astype(bool)
+        corpus = np.empty((0, 128)).astype(bool)
         for i in os.listdir(self.path_to_music):
             if i.endswith('.mid') or i.endswith('.midi'):
                 multitrack = piano.parse(os.path.join(self.path_to_music, i))
@@ -125,28 +165,12 @@ class MusicSource(object):
                 singletrack.program = self.instrument
 
                 p_roll = singletrack.pianoroll
-                self.corpus = np.append(self.corpus, p_roll, axis=0)
-                if len(self.corpus) > max_length:
-                    self.corpus = self.corpus[:max_length]
+                corpus = np.append(corpus, p_roll, axis=0)
+                if len(corpus) > max_length:
+                    corpus = corpus[:max_length]
                     # stop reading in MIDIs if max corpus size is reached
                     break
-
-        # get dominant key in corpus (right now only implemented if we use n-hot arrays for corpus)
-        kind = ['minor', 'major']
-        max_perc = 0
-        key = np.zeros(3) # base tone, minor(0)/major(1), percent
-        for i in range(12):
-            for j in range(2):
-                curr_perc = piano.metrics.in_scale_rate(self.corpus, key=i, kind=kind[j])
-                if curr_perc > max_perc:
-                    max_perc = curr_perc
-                    key[0] = i
-                    key[1] = j
-                    key[2] = curr_perc
-        print('Key of current piece: ', key[0], kind[int(key[1])], 'percentage: ', key[2])
-        self.key = key
-
-        self.corpus = self.corpus[:, 21:109] # only select MIDI indices that correspond to notes on a grand piano
+        return corpus[:, 21:109] # only select MIDI indices that correspond to notes on a grand piano
 
     def generate_MIDIindex_music_corpus(self, max_length):
         '''
@@ -183,10 +207,10 @@ class MusicSource(object):
                     if len(sym_sequence) > max_length:
                         break
 
-        self.corpus = np.array(sym_sequence).flatten().astype(np.int8)
-        if len(self.corpus) > max_length:
-            self.corpus = self.corpus[:max_length]
-
+        corpus = np.array(sym_sequence).flatten().astype(np.int8)
+        if len(corpus) > max_length:
+            corpus= corpus[:max_length]
+        return corpus
 
     def generate_connection_e(self, params):
         """
