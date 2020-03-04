@@ -76,11 +76,6 @@ class MusicSource(object):
             self.lowest_pitch = min(self.alphabet)
             self.highest_pitch = max(self.alphabet)
 
-            print('Lowest midi index, ', self.lowest_pitch)
-            print('Highest midi index, ', self.highest_pitch)
-            print('Lowest possible pitch:', self.midi_index_to_symbol(self.lowest_pitch))
-            print('Highest possible pitch:', self.midi_index_to_symbol(self.highest_pitch))
-
         else:
             # the corpus consists of converted pianorolls to an intermediate symbolic representation (MIDI indices),
             # we define an alphabet for this
@@ -100,10 +95,10 @@ class MusicSource(object):
             self.lowest_pitch = self.corpus[np.where(self.corpus > 0, self.corpus, np.inf).argmin()] # have to ignore silence symbol
             self.highest_pitch = self.corpus.max()
 
-            print('Lowest midi index, ', self.lowest_pitch)
-            print('Highest midi index, ', self.highest_pitch)
-            print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
-            print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
+        print('Lowest midi index, ', self.lowest_pitch)
+        print('Highest midi index, ', self.highest_pitch)
+        print('Lowest pitch in training data:', self.midi_index_to_symbol(self.lowest_pitch))
+        print('Highest pitch in training data:', self.midi_index_to_symbol(self.highest_pitch))
 
 
     def generate_pianoroll_music_corpus(self, max_length):
