@@ -105,6 +105,10 @@ This task implements a random sequence input, which was used to estimate the SOR
 
 This task uses the SORN as a generative model for texts: it trains the model on a given text file and generates autonomous inputs after the input is cut-off (i.e., the network receives its own output as input). 
 
+### MusicTask
+
+Analogous to the text task, SORN is used to generate music. It can be trained on monophonic or polyphonic midi tracks and eventually generates a spontaneous sequence of music (MIDI indices), using its own output as input at the next time step. A sample MIDI file can be generated from this spontaneous output. This task uses the package [pypianoroll](https://salu133445.github.io/pypianoroll/).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
