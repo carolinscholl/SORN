@@ -17,6 +17,7 @@ Currently implemented experiments:
 * RandomSequenceTask (from Del Papa et al. 2019)
 * NeuronalAvalanches (from [Del Papa et al. 2017](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0178683), Del Papa et al. 2019)
 * MemoryAvalanches (from Del Papa et al. 2019)
+* MusicTask (for encoding and generating monophonic and polyphonic MIDI tracks, task added by [carolinscholl](https://github.com/carolinscholl)
 * GrammarTask (for artificially built dictionaries)
 * TextTask (for general language encoding and generation with SORNs)
 
@@ -28,6 +29,7 @@ Currently implemented experiments:
 * [matplotlib](https://matplotlib.org/)
 * [bunch](https://pypi.python.org/pypi/bunch)
 * [powerlaw](https://pypi.python.org/pypi/powerlaw) (for the NeuronalAvalanches and MemoryAvalanche experiments)
+* [pypianoroll](https://salu133445.github.io/pypianoroll/) (for the Music experiments)
 
 ### Directory structure
 
@@ -49,9 +51,11 @@ Currently implemented experiments:
 ├── NeuronalAvalanches
 ├── RandomSequenceTask
 ├── TextTask
+├── MusicTask
 ├── README.md
 ├── LICENSE
 ├── requirements.txt               # requirements to build the python environment
+├── requirements_mac.txt           # requirements to build the python environment on macOS
 └── utils                          # contains bunch and the backup functions
     ├── backup.py
     └── bunch
@@ -107,7 +111,7 @@ This task uses the SORN as a generative model for texts: it trains the model on 
 
 ### MusicTask
 
-Analogous to the text task, SORN is used as a generative model for sequences. It can be trained on monophonic or polyphonic MIDI tracks and eventually generates a spontaneous sequence of music (MIDI indices), using its own output as input at the next time step. A sample MIDI file can be generated from this spontaneous output. This task uses the package [pypianoroll](https://salu133445.github.io/pypianoroll/).
+Analogous to the text task, SORN is used as a generative model for sequences. It can be trained on monophonic or polyphonic MIDI tracks and eventually generates a spontaneous sequence of music (MIDI indices), using its own output as input at the next time step. A sample MIDI file can be generated from this spontaneous output. 
 
 ## License
 
