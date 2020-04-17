@@ -107,7 +107,7 @@ This task uses the SORN as a generative model for texts: it trains the model on 
 
 ### MusicTask
 
-Analogous to the text task, SORN is used to generate music. It can be trained on monophonic or polyphonic midi tracks and eventually generates a spontaneous sequence of music (MIDI indices), using its own output as input at the next time step. A sample MIDI file can be generated from this spontaneous output. This task uses the package [pypianoroll](https://salu133445.github.io/pypianoroll/).
+Analogous to the text task, SORN is used as a generative model for sequences. It can be trained on monophonic or polyphonic MIDI tracks and eventually generates a spontaneous sequence of music (MIDI indices), using its own output as input at the next time step. A sample MIDI file can be generated from this spontaneous output. This task uses the package [pypianoroll](https://salu133445.github.io/pypianoroll/).
 
 ## License
 
